@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#E91E63">
+  <title>Aliança Canina</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #E91E63;
+      --primary-dark: #C2185B;
+      --bg: #FAFAFA;
+      --surface: #FFFFFF;
+      --text: #262626;
+      --text-secondary: #8E8E8E;
+      --border: #DBDBDB;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Loading */
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    #loading .logo { font-size: 80px; margin-bottom: 20px; animation: bounce 1.5s infinite; }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    #loading .text { color: #fff; font-size: 24px; font-weight: 800; }
+
+    /* Sistema de Views - APENAS UMA VISÍVEL POR VEZ */
+    .view { 
+      display: none; 
+      position: fixed;
+      inset: 0;
+      overflow-y: auto;
+      background: var(--bg);
+    }
+    .view.active { display: block; }
+
+    /* Auth */
+    .auth-container {
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .auth-logo { text-align: center; margin-bottom: 32px; }
+    .auth-logo .icon {
+      width: 80px;
+      height: 80px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    .auth-logo .icon i { font-size: 40px; color: var(--primary); }
+    .auth-logo h1 { font-size: 28px; color: var(--primary); font-weight: 800; }
+    .auth-logo p { color: var(--text-secondary); margin-top: 8px; font-size: 14px; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+    
+    .input-wrap { position: relative; display: flex; align-items: center; }
+    .input-wrap i { position: absolute; left: 16px; color: var(--text-secondary); }
+    .input-wrap input {
+      width: 100%;
+      padding: 14px 16px 14px 48px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .input-wrap input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1); }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(233, 30, 99, 0.3); }
+    .btn-secondary { background: #f5f5f5; color: var(--text); margin-top: 12px; }
+    .btn-secondary:hover { background: #ebebeb; }
+    .btn-google { background: #fff; border: 1px solid var(--border); color: var(--text); }
+    .btn-google:hover { background: #f5f5f5; }
+    .btn-google i { color: #4285F4; }
+
+    .divider { display: flex; align-items: center; margin: 20px 0; color: var(--text-secondary); font-size: 14px; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .divider span { padding: 0 16px; }
+
+    .error { background: #ffebee; color: #c62828; padding: 12px 16px; border-radius: 12px; font-size: 14px; margin-bottom: 16px; display: none; }
+    .error.show { display: block; }
+
+    .auth-footer { text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-secondary); }
+    .auth-footer a { color: var(--primary); text-decoration: none; font-weight: 600; cursor: pointer; }
+
+    /* Main App */
+    .main-app { 
+      background: var(--bg); 
+      min-height: 100vh; 
+      padding-bottom: 70px;
+      padding-top: 60px;
+    }
+    
+    .app-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 100;
+    }
+    .header-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--primary); font-size: 20px; }
+    .header-logo i { font-size: 24px; }
+    .header-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: #f5f5f5; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+    /* Menu Hamburger */
+    .menu-hamburger {
+      position: fixed;
+      top: 76px;
+      left: 16px;
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 95;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+    }
+
+    /* Menu Overlay */
+    .filter-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      z-index: 200;
+    }
+    .filter-overlay.active { display: block; }
+
+    .filter-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 320px;
+      max-width: 90vw;
+      height: 100vh;
+      background: #fff;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+      z-index: 201;
+    }
+    .filter-overlay.active .filter-panel { transform: translateX(0); }
+
+    .filter-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+    }
+    .filter-panel-header h3 { font-size: 18px; font-weight: 700; margin: 0; }
+    .filter-close-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .filter-panel-content { padding: 20px; }
+
+    .filter-row { margin-bottom: 16px; }
+    .filter-row label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+
+    .cascade-select {
+      width: 100%;
+      padding: 12px 36px 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 14px;
+      background: #fff;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+    .cascade-select:focus { outline: none; border-color: var(--primary); }
+
+    .filter-chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+
+    .filter-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      background: #fff;
+      transition: all 0.2s;
+    }
+    .filter-chip.active { background: var(--primary); border-color: var(--primary); color: white; }
+
+    /* Content area */
+    .discover-content { padding: 60px 16px 100px; }
+    
+    .pets-scroll-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    
+    @media (min-width: 768px) {
+      .pets-scroll-grid {
+        grid-template-columns: repeat(2, 320px);
+        max-width: 680px;
+      }
+    }
+
+    /* Pet Card */
+    .pet-card {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3/4;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      background: #000;
+    }
+
+    .pet-photos-container { position: relative; width: 100%; height: 100%; overflow: hidden; }
+    .pet-photos-track { display: flex; width: 500%; height: 100%; transition: transform 0.3s ease; }
+    .pet-photo-slide { width: 20%; height: 100%; flex-shrink: 0; }
+    .pet-photo-slide img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+    
+    .photo-indicators {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      gap: 4px;
+      z-index: 10;
+    }
+    .photo-indicator { flex: 1; height: 3px; background: rgba(255, 255, 255, 0.3); border-radius: 2px; }
+    .photo-indicator.active { background: white; }
+    
+    .photo-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      background: rgba(0, 0, 0, 0.4);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .pet-card:hover .photo-nav { opacity: 1; }
+    .photo-nav.prev { left: 8px; }
+    .photo-nav.next { right: 8px; }
+
+    /* Tutor avatar */
+    .tutor-avatar-top {
+      position: absolute;
+      top: 28px;
+      left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 20;
+    }
+    .tutor-avatar-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid white; }
+    .tutor-info-bubble { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); padding: 4px 10px; border-radius: 14px; }
+    .tutor-info-name { font-size: 12px; font-weight: 600; color: white; }
+    .tutor-info-loc { font-size: 10px; color: rgba(255,255,255,0.8); }
+
+    /* Pet info */
+    .pet-info-overlay {
+      position: absolute;
+      bottom: 70px;
+      left: 12px;
+      right: 12px;
+      z-index: 20;
+      color: white;
+    }
+    .pet-name-age { font-size: 20px; font-weight: 700; margin-bottom: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .pet-name-age span { font-weight: 400; opacity: 0.9; }
+    .pet-description-text { font-size: 12px; line-height: 1.4; opacity: 0.95; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+
+    /* Badges */
+    .pet-badges-right {
+      position: absolute;
+      top: 80px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 20;
+    }
+    .pet-badge-small { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+    .badge-vac { background: #25D366; color: white; }
+    .badge-ped { background: #FFD700; color: #333; }
+    .badge-disp { background: var(--primary); color: white; }
+    .badge-caram { background: #FF9800; color: white; }
+
+    /* Premium Badge */
+    .premium-badge-card {
+      position: absolute;
+      top: 28px;
+      right: 10px;
+      background: linear-gradient(45deg, #FFD700, #FFA500);
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      z-index: 20;
+    }
+
+    /* Action buttons */
+    .action-buttons-left {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      display: flex;
+      gap: 10px;
+      z-index: 20;
+    }
+    .action-btn-small {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .action-btn-small:hover { transform: scale(1.1); }
+    .btn-msg { background: white; color: #075E54; }
+    .btn-heart { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+    .btn-heart.liked { background: #F44336; }
+
+    /* Photo Modal */
+    .photo-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.95);
+      display: none;
+      z-index: 1000;
+    }
+    .photo-modal.active { display: block; }
+    .photo-modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 1002;
+    }
+    .photo-modal-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 1002;
+    }
+    .photo-modal-nav.prev { left: 20px; }
+    .photo-modal-nav.next { right: 20px; }
+    .photo-modal-counter {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 20px;
+      border-radius: 20px;
+      color: white;
+      font-size: 14px;
+      z-index: 1002;
+    }
+    .photo-modal-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .photo-modal-track { display: flex; height: 100%; transition: transform 0.3s ease; }
+    .photo-modal-slide { width: 100vw; height: 100vh; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .photo-modal-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 100;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      padding: 8px 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .nav-item i { font-size: 22px; }
+    .nav-item.active { color: var(--primary); }
+
+    /* Tabs */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Likes Page */
+    .likes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      padding: 80px 16px 20px;
+    }
+    .like-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+    .like-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); }
+    .like-name { font-size: 14px; font-weight: 500; text-align: center; }
+
+    /* Chat */
+    .chat-list { background: #fff; border-radius: 16px; overflow: hidden; margin: 80px 16px 20px; }
+    .chat-item { display: flex; align-items: center; gap: 12px; padding: 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .chat-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
+    .chat-info { flex: 1; }
+    .chat-name { font-weight: 600; margin-bottom: 4px; }
+    .chat-preview { font-size: 14px; color: var(--text-secondary); }
+    .chat-time { font-size: 12px; color: var(--text-secondary); }
+
+    /* Profile */
+    .profile-header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      padding: 40px 20px;
+      text-align: center;
+      color: white;
+      border-radius: 0 0 24px 24px;
+    }
+    .profile-avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid white; margin-bottom: 16px; }
+    .profile-name { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .profile-location { opacity: 0.9; }
+
+    .profile-menu { background: #fff; border-radius: 16px; margin: 16px; overflow: hidden; }
+    .menu-item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .menu-item i { width: 24px; color: var(--primary); }
+    .menu-item span { flex: 1; }
+
+    /* Security Popup */
+    .security-popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+      padding: 20px;
+    }
+    .security-popup.active { display: flex; }
+    .security-card {
+      background: white;
+      border-radius: 24px;
+      padding: 32px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    .security-icon { width: 80px; height: 80px; background: linear-gradient(135deg, #FF9800, #F57C00); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+    .security-icon i { font-size: 40px; color: white; }
+    .security-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .security-subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; }
+    .security-list { text-align: left; margin-bottom: 24px; }
+    .security-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .security-item i { color: var(--primary); font-size: 18px; margin-top: 2px; }
+    .security-btn { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; border: none; padding: 16px 32px; border-radius: 50px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; }
+  </style>
+</head>
+<body>
+  <!-- Loading -->
+  <div id="loading">
+    <div class="logo">🐕</div>
+    <div class="text">Aliança Canina</div>
+  </div>
+
+  <!-- VIEW: Login -->
+  <div class="view active" id="view-login">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="icon"><i class="fas fa-heart"></i></div>
+          <h1>Aliança Canina</h1>
+          <p>Encontre o par perfeito para seu pet</p>
+        </div>
+        <div class="error" id="loginError"></div>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Email</label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="loginEmail" placeholder="seu@email.com" required autocomplete="email">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Senha</label>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="loginPassword" placeholder="Sua senha" required autocomplete="current-password">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-sign-in-alt"></i> Entrar
+          </button>
+        </form>
+        <div class="divider"><span>ou</span></div>
+        <button class="btn btn-google" onclick="loginWithGoogle()">
+          <i class="fab fa-google"></i> Entrar com Google
+        </button>
+        <div class="auth-footer">
+          Não tem uma conta? <a onclick="showView('register')">Cadastre-se</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: Register -->
+  <div class="view" id="view-register">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-logo">
+          <div class="icon"><i class="fas fa-heart"></i></div>
+          <h1>Criar Conta</h1>
+          <p>Cadastre-se como tutor</p>
+        </div>
+        <div class="error" id="registerError"></div>
+        <form id="registerForm" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label>Nome completo</label>
+            <div class="input-wrap">
+              <i class="fas fa-user"></i>
+              <input type="text" id="registerName" placeholder="Seu nome" required autocomplete="name">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <div class="input-wrap">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="registerEmail" placeholder="seu@email.com" required autocomplete="email">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Cidade</label>
+            <div class="input-wrap">
+              <i class="fas fa-map-marker-alt"></i>
+              <input type="text" id="registerCity" placeholder="Sua cidade" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <div class="input-wrap">
+              <i class="fas fa-flag"></i>
+              <input type="text" id="registerState" placeholder="SP" maxlength="2" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Senha</label>
+            <div class="input-wrap">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Criar Conta
+          </button>
+        </form>
+        <button class="btn btn-secondary" onclick="showView('login')">
+          <i class="fas fa-arrow-left"></i> Já tenho conta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: Main App -->
+  <div class="view" id="view-app">
+    <div class="main-app">
+      <!-- Header -->
+      <header class="app-header">
+        <div class="header-logo">
+          <i class="fas fa-heart"></i>
+          <span>Aliança Canina</span>
+        </div>
+        <button class="header-btn" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </header>
+
+      <!-- TAB: Descobrir -->
+      <div class="tab-content active" id="tab-discover">
+        <button class="menu-hamburger" onclick="toggleFilterMenu()">
+          <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="filter-overlay" id="filterOverlay" onclick="closeFilterMenu(event)">
+          <div class="filter-panel" onclick="event.stopPropagation()">
+            <div class="filter-panel-header">
+              <h3><i class="fas fa-filter"></i> Filtros</h3>
+              <button class="filter-close-btn" onclick="toggleFilterMenu()">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="filter-panel-content">
+              <div class="filter-row">
+                <label>País</label>
+                <select class="cascade-select" id="filterCountry">
+                  <option value="">Todos os países</option>
+                  <option value="brasil">Brasil</option>
+                  <option value="portugal">Portugal</option>
+                  <option value="eua">Estados Unidos</option>
+                  <option value="argentina">Argentina</option>
+                </select>
+              </div>
+              <div class="filter-row">
+                <label>Estado</label>
+                <select class="cascade-select" id="filterState">
+                  <option value="">Todos os estados</option>
+                  <option value="SP">São Paulo</option>
+                  <option value="RJ">Rio de Janeiro</option>
+                  <option value="MG">Minas Gerais</option>
+                  <option value="RS">Rio Grande do Sul</option>
+                  <option value="PR">Paraná</option>
+                </select>
+              </div>
+              <div class="filter-row">
+                <label>Cidade</label>
+                <select class="cascade-select" id="filterCity">
+                  <option value="">Todas as cidades</option>
+                  <option value="sao-paulo">São Paulo</option>
+                  <option value="rio">Rio de Janeiro</option>
+                  <option value="bh">Belo Horizonte</option>
+                  <option value="poa">Porto Alegre</option>
+                </select>
+              </div>
+              <div class="filter-row">
+                <label>Raça</label>
+                <select class="cascade-select" id="filterBreed">
+                  <option value="">Todas as raças</option>
+                  <option value="golden">Golden Retriever</option>
+                  <option value="labrador">Labrador</option>
+                  <option value="poodle">Poodle</option>
+                  <option value="bulldog">Bulldog Francês</option>
+                  <option value="srd">SRD</option>
+                  <option value="caramelo">Caramelo</option>
+                </select>
+              </div>
+              <div class="filter-chips-row">
+                <div class="filter-chip" onclick="this.classList.toggle('active')">
+                  <i class="fas fa-certificate"></i> Pedigree
+                </div>
+                <div class="filter-chip" onclick="this.classList.toggle('active')">
+                  <i class="fas fa-syringe"></i> Vacinado
+                </div>
+                <div class="filter-chip" onclick="this.classList.toggle('active')">
+                  <i class="fas fa-baby"></i> Disponível
+                </div>
+                <div class="filter-chip" onclick="this.classList.toggle('active')">
+                  <i class="fas fa-paw"></i> Caramelo
+                </div>
+              </div>
+              <button class="btn btn-primary" style="margin-top: 20px;" onclick="toggleFilterMenu()">
+                <i class="fas fa-search"></i> Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="discover-content">
+          <div class="pets-scroll-grid" id="petsGrid">
+            <!-- Pet cards will be rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Likes -->
+      <div class="tab-content" id="tab-likes">
+        <h2 style="font-size: 20px; font-weight: 700; padding: 20px 16px 16px;">Quem curtiu você</h2>
+        <div class="likes-grid" id="likesGrid">
+          <!-- Likes will be rendered here -->
+        </div>
+      </div>
+
+      <!-- TAB: Chat -->
+      <div class="tab-content" id="tab-chat">
+        <div class="chat-list" id="chatList">
+          <!-- Chats will be rendered here -->
+        </div>
+      </div>
+
+      <!-- TAB: Profile -->
+      <div class="tab-content" id="tab-profile">
+        <div class="profile-header">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop" class="profile-avatar" id="profileAvatar">
+          <div class="profile-name" id="profileName">Usuário</div>
+          <div class="profile-location" id="profileLocation">Cidade, UF</div>
+        </div>
+        <div class="profile-menu">
+          <div class="menu-item" onclick="editProfile()">
+            <i class="fas fa-user-edit"></i>
+            <span>Editar perfil</span>
+            <i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
+          </div>
+          <div class="menu-item" onclick="managePets()">
+            <i class="fas fa-paw"></i>
+            <span>Meus pets</span>
+            <i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
+          </div>
+          <div class="menu-item" onclick="goPremium()">
+            <i class="fas fa-crown" style="color: #FFD700;"></i>
+            <span>Tornar Premium</span>
+            <i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i>
+          </div>
+          <div class="menu-item" onclick="logout()">
+            <i class="fas fa-sign-out-alt" style="color: #F44336;"></i>
+            <span style="color: #F44336;">Sair</span>
+            <i class="fas fa-chevron-right" style="color: #F44336;"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Navigation -->
+      <nav class="bottom-nav">
+        <button class="nav-item active" onclick="showTab('discover')">
+          <i class="fas fa-compass"></i>
+          <span>Descobrir</span>
+        </button>
+        <button class="nav-item" onclick="showTab('likes')">
+          <i class="fas fa-heart"></i>
+          <span>Likes</span>
+        </button>
+        <button class="nav-item" onclick="showTab('chat')">
+          <i class="fas fa-comment"></i>
+          <span>Chat</span>
+        </button>
+        <button class="nav-item" onclick="showTab('profile')">
+          <i class="fas fa-user"></i>
+          <span>Perfil</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Photo Modal -->
+  <div class="photo-modal" id="photoModal">
+    <button class="photo-modal-close" onclick="closePhotoModal()"><i class="fas fa-times"></i></button>
+    <button class="photo-modal-nav prev" onclick="prevModalPhoto()"><i class="fas fa-chevron-left"></i></button>
+    <button class="photo-modal-nav next" onclick="nextModalPhoto()"><i class="fas fa-chevron-right"></i></button>
+    <div class="photo-modal-counter" id="photoCounter">1 / 5</div>
+    <div class="photo-modal-container">
+      <div class="photo-modal-track" id="modalTrack"></div>
+    </div>
+  </div>
+
+  <!-- Security Popup -->
+  <div class="security-popup" id="securityPopup">
+    <div class="security-card">
+      <div class="security-icon"><i class="fas fa-shield-alt"></i></div>
+      <div class="security-title">Cuidado com golpes!</div>
+      <div class="security-subtitle">A Aliança Canina não se responsabiliza por danos, fraudes ou problemas ocorridos durante encontros entre pets.</div>
+      <div class="security-list">
+        <div class="security-item"><i class="fas fa-map-marker-alt"></i><span>Encontrar em locais públicos</span></div>
+        <div class="security-item"><i class="fas fa-money-bill-wave"></i><span>Nunca enviar dinheiro antecipado</span></div>
+        <div class="security-item"><i class="fas fa-file-medical"></i><span>Verificar documentação (pedigree, vacina)</span></div>
+        <div class="security-item"><i class="fas fa-hospital"></i><span>Contar com intermediação de veterinário</span></div>
+      </div>
+      <button class="security-btn" onclick="closeSecurityPopup()">Entendi</button>
+    </div>
+  </div>
+
+  <script>
+    // Contas de teste (não expostas na UI)
+    const TEST_ACCOUNTS = {
+      'aliancacanina@gmail.com': { password: 'Teste123456', name: 'Administrador', plan: 'admin', city: 'São Paulo', state: 'SP' },
+      'teste@email.com': { password: 'Teste123456', name: 'Usuário Teste', plan: 'basic', city: 'São Paulo', state: 'SP' },
+      'premium@aliancacanina.com.br': { password: 'Teste123456', name: 'Usuário Premium', plan: 'premium', city: 'Rio de Janeiro', state: 'RJ' }
+    };
+
+    // Dados dos pets
+    const petsData = [
+      {
+        id: 0,
+        name: 'Thor',
+        age: '3 anos',
+        breed: 'Golden Retriever',
+        description: 'Golden Retriever macho, muito carinhoso e brincalhão. Adora crianças!',
+        tutor: { name: 'Maria Silva', location: 'São Paulo, SP', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop' },
+        photos: ['https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1591160690555-5debfba294f2?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1615266895738-11f1371cd7e5?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600&h=800&fit=crop'],
+        badges: { vac: true, ped: true, disp: true, caramelo: false },
+        premium: true
+      },
+      {
+        id: 1,
+        name: 'Luna',
+        age: '2 anos',
+        breed: 'Bulldog Francês',
+        description: 'Bulldog Francês fêmea, muito dócil. Adora brincar na praia!',
+        tutor: { name: 'Ana Paula', location: 'Rio de Janeiro, RJ', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop' },
+        photos: ['https://images.unsplash.com/photo-1598133894008-61f7fdb8cc3a?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1596492784531-6e6eb5ea9205?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1579213838058-5d76a4a8e6b8?w=600&h=800&fit=crop'],
+        badges: { vac: true, ped: false, disp: true, caramelo: false },
+        premium: false
+      },
+      {
+        id: 2,
+        name: 'Max',
+        age: '4 anos',
+        breed: 'Vira-lata Caramelo',
+        description: 'Vira-lata caramelo, muito esperto e protetor!',
+        tutor: { name: 'João Pedro', location: 'Belo Horizonte, MG', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop' },
+        photos: ['https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1591769225440-811ad7d6eca6?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=800&fit=crop'],
+        badges: { vac: true, ped: false, disp: false, caramelo: true },
+        premium: false
+      },
+      {
+        id: 3,
+        name: 'Bella',
+        age: '1 ano',
+        breed: 'Poodle',
+        description: 'Poodle fêmea, muito elegante e carinhosa!',
+        tutor: { name: 'Carolina', location: 'Porto Alegre, RS', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop' },
+        photos: ['https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1615266895738-11f1371cd7e5?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1596492784531-6e6eb5ea9205?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1579213838058-5d76a4a8e6b8?w=600&h=800&fit=crop','https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&h=800&fit=crop'],
+        badges: { vac: true, ped: true, disp: true, caramelo: false },
+        premium: false
+      }
+    ];
+
+    let currentUser = null;
+    let currentPhotoIndices = {};
+    let likedPets = {};
+    let modalPetIndex = 0;
+    let modalPhotoIndex = 0;
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(() => {
+        document.getElementById('loading').classList.add('hidden');
+        setTimeout(() => {
+          document.getElementById('securityPopup').classList.add('active');
+        }, 500);
+      }, 1500);
+
+      renderPets();
+      renderLikes();
+      renderChats();
+    });
+
+    // Sistema de Views - mostra apenas uma view por vez
+    function showView(viewId) {
+      // Esconde todas as views
+      document.querySelectorAll('.view').forEach(v => {
+        v.classList.remove('active');
+      });
+      // Mostra a view solicitada
+      const targetView = document.getElementById('view-' + viewId);
+      if (targetView) {
+        targetView.classList.add('active');
+      }
+      // Limpa erros
+      document.querySelectorAll('.error').forEach(e => e.classList.remove('show'));
+    }
+
+    // Login handler
+    function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.toLowerCase().trim();
+      const password = document.getElementById('loginPassword').value;
+      const errorDiv = document.getElementById('loginError');
+      
+      const account = TEST_ACCOUNTS[email];
+      if (account && account.password === password) {
+        currentUser = { email, ...account };
+        errorDiv.classList.remove('show');
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        updateProfile();
+        showView('app');
+      } else {
+        errorDiv.textContent = 'Email ou senha incorretos';
+        errorDiv.classList.add('show');
+      }
+    }
+
+    // Register handler
+    function handleRegister(e) {
+      e.preventDefault();
+      const name = document.getElementById('registerName').value.trim();
+      const email = document.getElementById('registerEmail').value.toLowerCase().trim();
+      const city = document.getElementById('registerCity').value.trim();
+      const state = document.getElementById('registerState').value.trim().toUpperCase();
+      const password = document.getElementById('registerPassword').value;
+      const errorDiv = document.getElementById('registerError');
+      
+      if (password.length < 6) {
+        errorDiv.textContent = 'A senha deve ter pelo menos 6 caracteres';
+        errorDiv.classList.add('show');
+        return;
+      }
+      
+      currentUser = { email, name, plan: 'basic', city, state };
+      errorDiv.classList.remove('show');
+      
+      // Limpa formulário
+      document.getElementById('registerName').value = '';
+      document.getElementById('registerEmail').value = '';
+      document.getElementById('registerCity').value = '';
+      document.getElementById('registerState').value = '';
+      document.getElementById('registerPassword').value = '';
+      
+      updateProfile();
+      showView('app');
+    }
+
+    // Google login
+    function loginWithGoogle() {
+      currentUser = { email: 'google@user.com', name: 'Usuário Google', plan: 'basic', city: 'São Paulo', state: 'SP' };
+      updateProfile();
+      showView('app');
+    }
+
+    // Update profile
+    function updateProfile() {
+      if (currentUser) {
+        document.getElementById('profileName').textContent = currentUser.name;
+        document.getElementById('profileLocation').textContent = currentUser.city + ', ' + currentUser.state;
+      }
+    }
+
+    // Logout
+    function logout() {
+      currentUser = null;
+      document.getElementById('loginEmail').value = '';
+      document.getElementById('loginPassword').value = '';
+      showView('login');
+    }
+
+    // Tabs
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      
+      const tab = document.getElementById('tab-' + tabId);
+      if (tab) tab.classList.add('active');
+      
+      const navItems = document.querySelectorAll('.nav-item');
+      const tabIndex = ['discover', 'likes', 'chat', 'profile'].indexOf(tabId);
+      if (tabIndex >= 0 && navItems[tabIndex]) {
+        navItems[tabIndex].classList.add('active');
+      }
+    }
+
+    // Render pets
+    function renderPets() {
+      const grid = document.getElementById('petsGrid');
+      grid.innerHTML = petsData.map(pet => `
+        <div class="pet-card" data-pet-id="${pet.id}">
+          ${pet.premium ? '<div class="premium-badge-card"><i class="fas fa-crown"></i> PREMIUM</div>' : ''}
+          <div class="pet-photos-container">
+            <div class="photo-indicators">
+              ${[0,1,2,3,4].map(i => `<div class="photo-indicator ${i === 0 ? 'active' : ''}" id="indicator-${pet.id}-${i}"></div>`).join('')}
+            </div>
+            <button class="photo-nav prev" onclick="prevPhoto(${pet.id})"><i class="fas fa-chevron-left"></i></button>
+            <button class="photo-nav next" onclick="nextPhoto(${pet.id})"><i class="fas fa-chevron-right"></i></button>
+            <div class="pet-photos-track" id="track-${pet.id}">
+              ${pet.photos.map((photo, i) => `
+                <div class="pet-photo-slide" onclick="openPhotoModal(${pet.id}, ${i})">
+                  <img src="${photo}" alt="${pet.name}">
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="tutor-avatar-top">
+            <img src="${pet.tutor.avatar}" class="tutor-avatar-img">
+            <div class="tutor-info-bubble">
+              <div class="tutor-info-name">${pet.tutor.name}</div>
+              <div class="tutor-info-loc"><i class="fas fa-map-marker-alt"></i> ${pet.tutor.location}</div>
+            </div>
+          </div>
+          <div class="pet-badges-right">
+            ${pet.badges.vac ? '<div class="pet-badge-small badge-vac" title="Vacinado"><i class="fas fa-syringe"></i></div>' : ''}
+            ${pet.badges.ped ? '<div class="pet-badge-small badge-ped" title="Pedigree"><i class="fas fa-certificate"></i></div>' : ''}
+            ${pet.badges.disp ? '<div class="pet-badge-small badge-disp" title="Disponível"><i class="fas fa-baby"></i></div>' : ''}
+            ${pet.badges.caramelo ? '<div class="pet-badge-small badge-caram" title="Caramelo"><i class="fas fa-paw"></i></div>' : ''}
+          </div>
+          <div class="pet-info-overlay">
+            <div class="pet-name-age">${pet.name} <span>, ${pet.age}</span></div>
+            <div class="pet-description-text">${pet.breed} - ${pet.description}</div>
+          </div>
+          <div class="action-buttons-left">
+            <button class="action-btn-small btn-msg" onclick="openChat('${pet.tutor.name}', '${pet.name}')" title="Mensagem">
+              <i class="fas fa-comment"></i>
+            </button>
+            <button class="action-btn-small btn-heart ${likedPets[pet.id] ? 'liked' : ''}" id="heart-${pet.id}" onclick="toggleLike(${pet.id})" title="Curtir">
+              <i class="fas fa-heart"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      
+      // Inicializa índices das fotos
+      petsData.forEach(pet => currentPhotoIndices[pet.id] = 0);
+    }
+
+    // Render likes
+    function renderLikes() {
+      const grid = document.getElementById('likesGrid');
+      const likes = [
+        { name: 'Luna', img: 'https://images.unsplash.com/photo-1598133894008-61f7fdb8cc3a?w=200&h=200&fit=crop' },
+        { name: 'Max', img: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=200&h=200&fit=crop' }
+      ];
+      grid.innerHTML = likes.map(like => `
+        <div class="like-item" onclick="showTab('chat')">
+          <img src="${like.img}" class="like-avatar">
+          <span class="like-name">${like.name}</span>
+        </div>
+      `).join('');
+    }
+
+    // Render chats
+    function renderChats() {
+      const list = document.getElementById('chatList');
+      list.innerHTML = `
+        <div class="chat-item" onclick="openChat('Maria', 'Thor')">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop" class="chat-avatar">
+          <div class="chat-info">
+            <div class="chat-name">Maria - Thor</div>
+            <div class="chat-preview">Olá! Thor é lindo! 🐕</div>
+          </div>
+          <span class="chat-time">10:30</span>
+        </div>
+      `;
+    }
+
+    // Photo navigation
+    function updatePhotoIndicators(petId) {
+      for (let i = 0; i < 5; i++) {
+        const indicator = document.getElementById(`indicator-${petId}-${i}`);
+        if (indicator) {
+          indicator.classList.toggle('active', i === currentPhotoIndices[petId]);
+        }
+      }
+    }
+
+    function prevPhoto(petId) {
+      if (currentPhotoIndices[petId] > 0) {
+        currentPhotoIndices[petId]--;
+        document.getElementById('track-' + petId).style.transform = 'translateX(-' + (currentPhotoIndices[petId] * 20) + '%)';
+        updatePhotoIndicators(petId);
+      }
+    }
+
+    function nextPhoto(petId) {
+      if (currentPhotoIndices[petId] < 4) {
+        currentPhotoIndices[petId]++;
+        document.getElementById('track-' + petId).style.transform = 'translateX(-' + (currentPhotoIndices[petId] * 20) + '%)';
+        updatePhotoIndicators(petId);
+      }
+    }
+
+    // Like toggle
+    function toggleLike(petId) {
+      const heartBtn = document.getElementById('heart-' + petId);
+      if (!likedPets[petId]) {
+        likedPets[petId] = true;
+        heartBtn.classList.add('liked');
+        heartBtn.style.background = '#F44336';
+        alert('Like enviado! O tutor será notificado por email.');
+      } else {
+        likedPets[petId] = false;
+        heartBtn.classList.remove('liked');
+        heartBtn.style.background = '';
+      }
+    }
+
+    // Photo modal
+    function openPhotoModal(petId, photoIndex) {
+      modalPetIndex = petId;
+      modalPhotoIndex = photoIndex;
+      const pet = petsData.find(p => p.id === petId);
+      if (!pet) return;
+      
+      const modalTrack = document.getElementById('modalTrack');
+      modalTrack.innerHTML = pet.photos.map(photo => `
+        <div class="photo-modal-slide">
+          <img src="${photo}" alt="Pet photo">
+        </div>
+      `).join('');
+      updateModalPhoto();
+      document.getElementById('photoModal').classList.add('active');
+    }
+
+    function updateModalPhoto() {
+      document.getElementById('modalTrack').style.transform = 'translateX(-' + (modalPhotoIndex * 100) + 'vw)';
+      document.getElementById('photoCounter').textContent = (modalPhotoIndex + 1) + ' / 5';
+    }
+
+    function prevModalPhoto() {
+      if (modalPhotoIndex > 0) {
+        modalPhotoIndex--;
+        updateModalPhoto();
+      }
+    }
+
+    function nextModalPhoto() {
+      if (modalPhotoIndex < 4) {
+        modalPhotoIndex++;
+        updateModalPhoto();
+      }
+    }
+
+    function closePhotoModal() {
+      document.getElementById('photoModal').classList.remove('active');
+    }
+
+    // Touch swipe for modal
+    let touchStartX = 0;
+    document.getElementById('photoModal').addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+    });
+    document.getElementById('photoModal').addEventListener('touchend', e => {
+      const diff = touchStartX - e.changedTouches[0].screenX;
+      if (Math.abs(diff) > 50) {
+        diff > 0 ? nextModalPhoto() : prevModalPhoto();
+      }
+    });
+
+    // Chat
+    function openChat(tutor, pet) {
+      if (currentUser && currentUser.plan === 'basic') {
+        alert('Usuários do plano Básico só podem responder mensagens. Faça upgrade para Premium!');
+      } else {
+        alert('Abrindo chat com ' + tutor + ' sobre ' + pet);
+      }
+    }
+
+    // Security popup
+    function closeSecurityPopup() {
+      document.getElementById('securityPopup').classList.remove('active');
+    }
+
+    // Filter menu
+    function toggleFilterMenu() {
+      const overlay = document.getElementById('filterOverlay');
+      overlay.classList.toggle('active');
+      document.body.style.overflow = overlay.classList.contains('active') ? 'hidden' : '';
+    }
+
+    function closeFilterMenu(event) {
+      if (event.target === event.currentTarget) {
+        toggleFilterMenu();
+      }
+    }
+
+    // Profile functions
+    function editProfile() { alert('Editar perfil - em desenvolvimento'); }
+    function managePets() { alert('Gerenciar pets - em desenvolvimento'); }
+    function goPremium() { alert('Upgrade Premium - R$ 65,00\n\nEm breve integração com pagamento!'); }
+  </script>
+</body>
+</html>
